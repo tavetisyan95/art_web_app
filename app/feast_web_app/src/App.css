@@ -1,0 +1,122 @@
+* {
+	background: #2c2c54;
+	color: #f7f1e3;
+	text-align: center;
+	min-width: 0px !important;
+}
+
+div,
+p {
+	background: transparent;
+}
+
+
+html {
+	position: relative;
+}
+
+
+.UI_wrapper {
+	display: grid;
+	grid-auto-rows: auto;
+	grid-template-columns: 1fr 1fr;
+	gap: 10px;
+	width: 100vw;
+	background: transparent;
+	position: relative;
+}
+
+.ui_item {
+	margin: 30px;
+	width: auto;
+}
+
+#selector_mode_parent {
+	width: auto;
+	margin-left: 20%;
+	margin-right: 20%;
+}
+
+.ui_item:nth-child(23) {
+	grid-column: 1 / span 2;
+}
+
+.fieldset {
+	border: 1px solid deeppink;
+	background: #262645;
+	border-radius: 6px;
+}
+
+.fieldset:hover {
+	box-shadow: 2px 2px 30px black;
+	;
+}
+
+.choice_title {
+	font-size: 1.3vw;
+}
+
+button {
+	height: auto;
+	width: auto;
+	border: none;
+	background: #ff5252;
+	color: whitesmoke;
+	border-radius: 4px;
+	font-size: 17px;
+	cursor: pointer;
+	padding: 10px;
+}
+
+.type {
+	font-style: italic;
+}
+
+input {
+	border: none;
+	height: 30px;
+	border-radius: 4px;
+	background: whitesmoke;
+	color: #141414;
+	font-size: 16px;
+	text-align: left !important;
+	padding-left: 5px;
+}
+
+
+.title,
+.subtitle {
+	text-align: center;
+}
+
+.title {
+	font-size: 40px;
+	font-style: italic;
+}
+
+.subtitle {
+	margin-top: -30px;
+	font-size: 24px;
+}
+
+.legend {
+	font-style: italic;
+	font-weight: bold;
+	margin-bottom: 5px;
+	font-size: 20px;
+}
+
+
+.description {
+	margin-top: 20px;
+}
+
+@media only screen and (max-width: 1000px) {
+	.UI_wrapper {
+		grid-template-rows: auto;
+		grid-template-columns: 100vw;
+	}
+  .ui_item:nth-child(23) {
+    grid-column: 1 / span 1;
+  }
+}
