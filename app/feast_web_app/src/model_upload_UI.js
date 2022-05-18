@@ -8,7 +8,7 @@ function ModelUploadUI(props) {
 					<fieldset className="fieldset">
 						<legend className="legend">Model</legend>
 						<div className="input">
-							<input type="file" id="model" accept=".h5"></input>
+							<input type="file" id="vuln_model" accept=".h5"></input>
 						</div>
 						<button id="select_model_button" onClick={(e) => {document.getElementById("model_weights").click()}}>UPLOAD</button>
 						<div className="description">
@@ -23,10 +23,10 @@ function ModelUploadUI(props) {
             <div className="ui_item">
                 <fieldset className="fieldset">
                     <br></br>
-				    <button id="upload_model_button" onClick={() => {events.uploadModel()}}>Upload Model</button> 
+				    <button id="upload_vuln_model_button" onClick={() => {events.uploadModel("vuln_model")}}>Upload Model</button> 
                     <br></br>
                     <br></br>
-                    <div className="text" id="upload_model_response_area">
+                    <div className="text" id="upload_vuln_model_response_area">
 					    Press the button above to clone the repo from GitHub.
 				    </div>
                     <br></br>

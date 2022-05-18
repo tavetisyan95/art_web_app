@@ -8,7 +8,7 @@ function EvasionUI(props) {
 					<fieldset className="fieldset">
 						<legend className="legend">Vulnerable model</legend>
 						<div className="input">
-							<input type="file" id="vulnerable_model" accept=".h5"></input>
+							<input type="file" id="fgm_vuln_model" accept=".h5"></input>
 						</div>
 						<button id="select_vuln_model_button" onClick={(e) => {document.getElementById("model_weights").click()}}>UPLOAD</button>
 						<div className="description">
@@ -23,10 +23,10 @@ function EvasionUI(props) {
             <div className="ui_item">
                 <fieldset className="fieldset">
                     <br></br>
-				    <button id="upload_vuln_model_button" onClick={() => {events.uploadVulnerableModel()}}>Upload Vulnerable Model</button> 
+				    <button id="upload_fgm_vuln_model_button" onClick={() => {events.uploadModel("fgm_vuln_model")}}>Upload Vulnerable Model</button> 
                     <br></br>
                     <br></br>
-                    <div className="text" id="upload_vuln_model_response_area">
+                    <div className="text" id="upload_fgm_vuln_model_response_area">
 					    Press the button above to clone the repo from GitHub.
 				    </div>
                     <br></br>
