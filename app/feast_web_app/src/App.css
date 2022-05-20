@@ -106,9 +106,33 @@ input {
 	font-size: 20px;
 }
 
-
 .description {
 	margin-top: 20px;
+}
+
+#tested_model_fgm, 
+#tested_model_poison, 
+#tested_model_copycatcnn, 
+#vuln_model_fgm {
+	visibility: hidden;
+}
+
+#select_tested_model_fgm_button,
+#upload_tested_model_fgm_button,
+#attack_fgm_button, 
+#select_vuln_model_button,
+#upload_vuln_model_fgm_button,
+#select_model_poison_button,
+#upload_tested_model_poison_button,
+#attack_backdoor_button,
+#select_model_copycatcnn_button,
+#upload_tested_model_copycatcnn_button,
+#attack_copycatcnn_button {
+	height: auto;
+	width: auto;
+	padding: 10px;
+	background: tomato;
+	color: whitesmoke;
 }
 
 @media only screen and (max-width: 1000px) {
