@@ -1,31 +1,25 @@
-This repository contains the project for the post [Creating a Feature Store with Feast Part 3: Building An API and React App for Feast](https://kedion.medium.com/feature-storage-for-ml-with-feast-a061899fc4a2) on the Kedion blog on Medium.
+This repository contains the project for the post [ML Security with the Adversarial Robustness Toolbox: Part 3 – Building an AI Defense Tester with ART] on the Kedion blog on Medium.
 
 ## Clone Project
 
 Clone the project:
 
-`git clone https://github.com/tavetisyan95/feast_web_app.git`
+`git clone https://github.com/tavetisyan95/art_web_app.git`
 
 
 ## Set the `api_url`
 
-In the directory `app/feast_web_app/src/` inside `config.js`, edit the API URL, port, and endpoints, if necessary. The default config should work for most people.
+In the directory `app/art_web_app/src/` inside `config.js`, edit the API URL, port, and endpoints, if necessary. The default config should work for most people.
 
 ```
 export const config = {
   api_url: "localhost",
   api_port: 5000,  
-  clone_repo_endpoint: "/clone_repo",
-  get_store_endpoint: "/get_store",
-  get_feature_views_endpoint: "/get_feature_views",
-  get_feature_names_endpoint: "/get_feature_names",
-  get_entities_endpoint: "/get_entities",
-  register_entity_df_endpoint: "/register_entity_df",
-  save_dataset_endpoint: "/save_dataset",
-  materialize_endpoint: "/materialize",
-  materialize_incremental_endpoint: "/materialize_incremental"
+  upload_model_endpoint: "/upload-model",
+  run_fgm_endpoint: "/run-fgm",
+  run_backdoor_endpoint: "/run-backdoor",
+  run_copycatcnn_endpoint: "/run-copycatcnn"
 };
-
 ```
 
 NOTE: don't put any http or slashes/backslashess in the api_url!
@@ -39,146 +33,110 @@ To start the application's Docker container, launch Docker Desktop. Then, naviga
 
 It may take some time for the app to spin up. Once you see terminal messages that the containers are up, navigate to `http://localhost:3000` in your web browser to open the application's webpage.
 
-ALTERNATIVELY, you can run the `start.sh` shell script to start the web app without Docker. Run the command `bash start.sh` in the terminal to launch the shell script. If you are on Windows, you can use Git Bash to run shell scripts.
+ALTERNATIVELY, you can run the `start.sh` shell script to start the web app without Docker. Run the command `bash start.sh` in the terminal to launch the shell script. If you are on Windows, you can use Git Bash to run shell scripts. Note that you may need to modify the paths in the API and JS files for the app to work outside of Docker.
 
 
-## 1. Cloning a Feast feature store GitHub repository
+## Attacks Implemented in the App
 
-Once the app is running, the first thing to do is to clone a Feast feature store repo from GitHub. This is done in the section `GIT REPO CLONING`.
+Our app implements the following attacks:
 
-![Image](screenshots/repo_cloning.jpg)
+- Fast Gradient Method (evasion).
+- Poisoning Backdoor (poisoning).
+- CopycatCNN (extraction).
 
-Use [this toy feature store repo](https://github.com/tavetisyan95/feast_web_app_toy_data) to test the app. By default, the link that appears in the box under `GitHub repo URL` leads to the toy feature store.
+The app is designed for models trained on the MNIST digits dataset - the training/testing data is hardcoded in the API. TF/Keras models are expected. The app should work with various model architectures, but we haven't tested model support. You may run into issues with model architectures that are different from that in our sample models.
 
-If you want to use a different repository, use its URL instead. But make sure that the structure mimics that of our toy feature store!
-
-After the GitHub repo URL, you will also need to enter the target path for cloning under `Target path`. The app will clone the feature store repo to `api/git_repos/{target_path}` on the web server. **Don't add slashes** anywhere in `Target path`!
-
-After you are done, press the button `Get Repo`. If everything is OK, you will see `Repo cloned!` under the button. Otherwise, you will see `Something went wrong. Check the API logs`.
-
-Note that the app will save `Target path` for later use. When you save a dataset (more on this later), the app will use `Target path` to construct the desired path to the dataset.
+We provide pretrained test models in the directory `models`. However, if you want to train your own models, use the code in [this repository]. The code you'll find there is the exact same code we used to train our test models.
 
 
+### 1. Running a Fast Gradient Method attack against your model
 
-## 2. Getting the feature store
+The first attack to try in the app is the Fast Gradient Method (FGM) attack.
 
-Next, our Python API will need to load the cloned feature store. This is done in the section `FEATURE STORE RETRIEVAL`.
+![Image](screenshots/fgm_screen.jpg)
 
-![Image](screenshots/store_retrieval.jpg)
+To run an FGM attack, you will need to upload two models:
 
+- **Tested model** - this is the model that you want to test against the attack. This could be a robust model trained with the Adversarial Trainer.
+- **Vulnerable model** - this is the model that FGM will learn to generate adversarial samples for. This model should be similar to your tested model.
 
-Under `Store path`, enter the directory where your feature store's `feature_store.yaml` config file is located. `Store path` should be relative to the root directory of the **ORIGINAL** repository. 
+Use `models/robust_model.h5` as `Tested model` and `models/vulnerable_model.h5` as `Vulnerable model`. To upload the models, click on the `UPLOAD` buttons on the left-hand side of the window and select the desired model files. After that, click `Upload Model` and `Upload Vulnerable Model` to upload the models to the web server.
 
-As an example, our toy feature store repo has the following sturcture:
+You can adjust three parameters for FGM - `eps`, `eps_step`, and `batch_size`. The default values in the app work for the supplied test models, but you could try different values to see how the attack's results change. The batch size probably will not affect the attack's effectiveness.
 
-```
-feast_web_app_toy_data
-├── driver_stats
-│   ├── data
-│   │   ├── driver_stats_1.parquet
-│   │   ├── driver_stats_2.parquet
-│   │   ├── online_store.db
-│   │   └── registry.db
-│   ├── definitions.py
-│   └── feature_store.yaml
-├── README.md
-├── data_exploration.ipynb
-├── data_preparation.ipynb
-└── driver_stats_with_string.parquet
-```
+After everything is ready, press `Run an FGM attack`. You should see the progress of the attack in the terminal window from which you launched the app. Once the attack is complete, the app will return two sets of scores:
 
-`feature_store.yaml` is located under `driver_stats/`. In this case, `driver_stats` (the default value) is what you should add - **no slashes** necessary.
+- **Metrics on clean data** - these show the performance of the tested model on clean samples.
+- **Metrics on adversarial data** - these show the performance of the tested model on FGM samples.
 
-On the web server, `Store path` is relative to `Target path` from the previous section - the API will append `Store path` to the path of the cloned repo.
+![Image](screenshots/fgm_results.jpg)
 
-After everything is ready, press `Get Store`. You will see `Store received!` under the button if everything went OK.
+If your model shows similar results on both clean and adversarial samples, it probably IS resistant to the attack with your chosen parameters.
 
-Note that the app will save `Store path` for later use, just like with `Target path`.
+Otherwise, if your model struggles with adversarial samples, it probably is NOT resistant to your attack parameters.
 
 
+### 2. Running a Poisoning Backdoor attack against your model
 
-## 3. Exploring the feature store
+The second attack you can try is the poisoning backdoor attack.
 
-Our app has some very light feature store exploration features. It allows you to check:
+![Image](screenshots/backdoor_screen.jpg)
 
-- Registered entities and their descriptions.
-- Registered feature views.
-- Registered features under each feature view.
+You again start by uploading your model to the web server. For this attack, you can use any of the supplied models. However, to see how the app can help you determine if your model is poisoned, use `models/poisoned_model.h5`.
 
-![Image](screenshots/feature_store_exploration.jpg)
+`poisoned_model.h5` was trained with the perturbation `add_pattern_bd`. The fake labels are just the original labels incremented by 1. So `0 -> 1`, `1 -> 2`, and so on. For the digit `9`, the fake label is `0`.
 
-To get the registered entity and feature view names, press the corresponding buttons.
+After you upload the model, you can adjust `Poisoning percentage` and `Target labels`. 
 
-With feature views, once you retrieve them, you will be able to select them under `Feature Views`. You will see the registered features for the selected feature view under `Features`.
+- `Poisoning percentage` determines the fraction of the original clean samples to poison in the range `(0, 1]`. The poisoned samples are added to the original clean ones, so you essentially get a dataset that was augmented with poisoned samples.
+- `Target labels` by default defines the same fake labels that were used to poison `poisoned_model.h5`. You can try other target values as well, which might affect the attack results.
 
-![Image](screenshots/feature_store_exploration_retrieved.jpg)
+After you are done with the parameters, click `Run a backdoor attack`. After the attack is complete, you will again see two sets of metrics:
 
+- **Metrics with respect to poisoned labels** - these show the performance of the tested model on *poisoned samples* against their respective *poisoned labels*.
+- **Test loss and accuracy on adversarial data** - these show the performance of the tested model on *poisoned samples* against their respective *clean labels*.
 
+![Image](screenshots/backdoor_results.jpg)
 
-## 4. Registering an entity DataFrame
+Your results could be as follows:
 
-Next, in the section `ENTITY DATAFRAME CREATION`, the app allows you to register an entity DataFrame, which you can later use to save data from some or all of the available feature views.
+1. **METRICS WITH RESPECT TO POISONED LABELS ARE WORSE THAN WITH RESPECT TO CLEAN LABELS.** This probably means that your model doesn't have backdoors. The model performs well against clean labels because it can correctly identify the samples, while the performance against poisoned labels is bad because the backdoor in the samples doesn't trigger the attacker's desired output.
 
-![Image](screenshots/entity_df_creation.jpg)
+2. **METRICS WITH RESPECT TO CLEAN LABELS ARE WORSE THAN WITH RESPECT TO POISONED LABELS.** This probably means that your model has a backdoor and that your target labels reflect the actual poisoned labels the model has been trained on. If the model performs well with respect to poisoned labels, it means that the backdoor in the samples triggers the attacker's desired output.
 
-Here are the things that you can change when registering an entity DataFrame:
-
-- `Timestamp range`. This field accepts two values - `Start date` and `End date`. The Python API will feed these values to the function `pandas.date_range` and generate timestamps between them. The default values correspond to the oldest and newest timestamps available in our toy feature repo.
-- `Frequency`. This is the periodicity with which `pandas.date_range` will generate timestamps. The default value is `H` for hourly frequency, meaning that timestamps will be an hour apart. The app can accept [all other time offset aliases](https://pandas.pydata.org/docs/user_guide/timeseries.html#timeseries-offset-aliases) supported by `pandas.date_range`, but they might not work with some datasets!
-- `Entity keys`. The entity keys that you want to create an entity DataFrame for. These are the IDs of the unique entities in your dataset. You can enter several entity keys, but make sure to separate them with a comma, like `1001, 1002, 1004`.
-- `Entity column name`. This is the column in your data files that the unique IDs are located under. In our toy dataset, `Entity column name` is `driver_id`.
-
-If you are using our toy dataset, you can leave the values unchanged and press `Create Entity DF`. If everything went OK, you will see `Entity DataFrame created!` under the button.
-
-You can also check out the [repo of the toy dataset](https://github.com/tavetisyan95/feast_web_app_toy_data) to learn more about the entity keys and timestamps that will work with it.
-
-## 5. Saving a dataset
-
-In the section `DATASET SAVING`, you can select one or more available feature views, retrieve their historical feature values, and save them to a dataset.
-
-![Image](screenshots/dataset_saving.jpg)
+3. **METRICS WITH RESPECT TO BOTH CLEAN AND POISONED LABELS ARE POOR.** This probably means that your model has a backdoor, but your chosen target labels aren't the actual poisoned labels the model has been trained on. The model performs badly against clean labels because it has a backdoor, but the performance against poisoned labels is also bad because you've picked incorrect target labels.
 
 
-Under `Dataset name`, enter the name under which you want to save the dataset. The dataset will be registered in your feature store under this name. Additionally, the name will be used as a filename for the parquet file that the dataset will be saved to.
+### 3. Running the CopycatCNN attack against your model
 
-Under `Available feature views`, you will see the feature views registered in your feature store. You can select one or more of them for saving.
+The third and final attack type you can try is CopycatCNN.
 
-After everything is ready, press `Save Dataset` to save your features in a dataset. 
-You will see `Dataset saved!` if everything went OK.
+![Image](screenshots/copycatcnn_screen.jpg)
 
-When you save the dataset, the app uses `Target path`, `Store path`, and `Dataset name` to construct the directory for saving the dataset. The code for this looks like this:
+You again start by uploading the model. The model `models/protected_model.h5` has the same architecture as the other test models, but it has a custom Reverse Sigmoid layer as its output. This model will be resistant to extraction attacks, while the others probably won't be.
 
-```
-# Storing the dataset locally on the server
-app.store.create_saved_dataset(
-    from_=job,
-    name=dataset_info.dataset_name,
-    storage=SavedDatasetFileStorage(
-        f"api/git_repos/{app.target_path}/{app.repo_path}/data/{dataset_info.dataset_name}.parquet")
-)
-```
+You can adjust the following parameters for this attack:
 
-NOTE: `Available feature views` gets populated with feature view names after you press `Get Feature View Names` in the section `FEATURE STORE EXPLORATION`. If you retrieve feature view names and then refresh the webpage, you will need to get the feature view names again before saving the dataset.
+- **Batch size for fitting** and **Batch size for querying**. These parameters control the batch size for fitting the stolen model and querying the victim model. Use larger batch sizes to speed up extraction, but mind OOM (out of memory) issues.
+- **Epochs**. This is the number of epochs that CopycatCNN trains the stolen model for.
+- **Number of queries**. This parameter corresponds to `nb_stolen` of ART's `CopycatCNN` class. It effectively determines the size of the training set for the stolen classifier.
 
-## 6. Materializing features to the online store
+After you are done, just click `Run a CopycatCNN attack`. You will once again see two sets of performance metrics:
 
-Finally, you can materialize features in the section `FEATURE MATERIAlIZATION`.
+` **Metrics of the victim model**. These are the performance metrics of the victim model that CopycatCNN tried to steal against the clean test set.
+` **Metrics of the stolen model**. These are the performance metrics of the stolen model against the clean test set.
 
-![Image](screenshots/feature_materialization.jpg)
+![Image](screenshots/copycatcnn_results.jpg)
 
-To do standard (non-incremental) materialization, use the box `Materialization interval (standard materialization)`. In this box, you'll be able to select start and end dates for materialization.
+If the stolen model performs similar to the victim model, it probably means that the victim model is NOT resistant to extraction attacks.
 
+Otherwise, if the stolen model performs notably worse than the victim model, it probably means that the victim model IS resistant to extraction attacks.
 
-For incremental materialization, use the box `Materialization interval (incremental materialization)`. You can select an end date for the materialization. Note that depending on the end date and the ttl of your feature views, incremental materialization may not be able to fetch any features.
+NOTE 1: the test loss will be high even for the protected victim model because of the Reverse Sigmoid output. This output significantly changes the magnitude of the loss for the model. This is because when evaluating the model, Reverse Sigmoid outputs aren't converted back to standard softmax.
 
+NOTE 2: the performance of the stolen model may vary significantly from run to run. We saw test accuracy between ~ 0.1 and ~0.75. It appears that the variance is due to ART's implementation of `TensorFlowV2Classifier` wrapper class. To our knowledge, `KerasClassifier` produces more consistent results.
 
+ 
 ## LIMITATIONS OF THE APP
 
-In its current implementation, the app has some notable limitations, including:
-
-- After you clone a repository, you cannot pull changes made after cloning. The only way to pull changes is to delete the repo on the web server and clone it from zero.
-- The API expects timestamps in the format `%Y-%m-%d` (`YYYY-MM-DD`), e.g. `2021-09-01`. Other formats are not supported.
-- Invalid inputs for parameters aren't handled. No error messages are shown in the web browser. The only way to know that something has gone wrong is through terminal logs. But there is one exception - if you don't select any feature views before saving a dataset, you will see `Please select at least one feature view` under the button `Save Dataset`.
-
-## Starting in Docker
-```docker-compose -f docker-compose.yaml up -d --build```
+- Invalid inputs for parameters aren't handled. No error messages are shown in the web browser. The only way to know that something has gone wrong is through terminal logs.
