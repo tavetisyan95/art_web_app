@@ -23,7 +23,7 @@ export const events = {
 		// Sending a POST request with the form data
 		axios({
 			method: "post",
-			url: "http://localhost:5000/upload-model",
+			url: "http://" + config.api_url + ":" + config.api_port + config.upload_model_endpoint,
 			data: formData,
 			headers: {
 				Accept: "application/json",
@@ -68,7 +68,7 @@ export const events = {
 		// Sending a POST request to run the attack
 		axios({
 			method: "post",
-			url: "http://localhost:5000/test-fgm",
+			url: "http://" + config.api_url + ":" + config.api_port + config.run_fgm_endpoint,
 			data: {
 				eps: eps,
 				eps_step: epsStep,
@@ -122,7 +122,7 @@ export const events = {
 		// Sending a POST request to run the attack
 		axios({
 			method: "post",
-			url: "http://localhost:5000/test-backdoor",
+			url: "http://" + config.api_url + ":" + config.api_port + config.run_backdoor_endpoint,
 			data: {
 				percent_poison: percentPoison,
 				target_labels: targetLabels
@@ -176,7 +176,7 @@ export const events = {
 		// Sending a POST request to run the attack
 		axios({
 			method: "post",
-			url: "http://localhost:5000/test-copycatcnn",
+			url: "http://" + config.api_url + ":" + config.api_port + config.run_copycatcnn_endpoint,
 			data: {
 				batch_size_fit: batchSizeFit,
 				batch_size_query: batchSizeQuery,

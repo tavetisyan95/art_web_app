@@ -1,228 +1,203 @@
 # Importing dependencies
-from feast import FeatureStore
-from feast.infra.offline_stores.file_source import SavedDatasetFileStorage
-from fastapi import FastAPI
+import aiofiles
+from fastapi import FastAPI, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import aiofiles
+import tensorflow as tf
+import art
+from art.attacks.evasion import FastGradientMethod
+from art.attacks.extraction import CopycatCNN
+from art.estimators.classification import TensorFlowV2Classifier
 import uvicorn
-from datetime import datetime
-from git import Repo
-import pandas as pd
-import os
+import util_functions
 
-# Instantiating the API
+# Data model for backdoor attacks
+class BackdoorArgs(BaseModel):
+    percent_poison: float
+    target_labels: str
+
+# Data model for copycat CNN
+class CopycatCNNArgs(BaseModel):
+    batch_size_fit: int
+    batch_size_query: int
+    nb_epochs: int
+    nb_stolen: int
+
+# Data model for the Fast Gradient Method
+class FGMArgs(BaseModel):    
+    eps: float
+    eps_step: float
+    batch_size: int
+
+# Loading data
+(train_images, train_labels), (test_images, test_labels), min, max = art.utils.load_dataset(name="mnist")
+
+# Initializing app
 app = FastAPI()
 
-# Defining allowed origins for CORS
-origins = ["http://localhost:3000", "http://localhost:5000", "http://127.0.0.1:3000", "http://127.0.0.1:5000"]
+# Defining allowed origins
+origins = [
+    "http://localhost:3000", 
+    "http://localhost:5000",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5000"
+]
 
-# Adding CORS policy to the API
+# Creating dictionary to store uploaded models
+app.classifiers = {}
+
+# Defining CORS policy
 app.add_middleware(
-    CORSMiddleware,
+    middleware_class=CORSMiddleware,
     allow_origins=origins,
     allow_methods=["*"],
-    allow_headers=["*"],
-)
+    allow_headers=["*"])
 
+# Endpoint for uploading the model to test
+@app.post("/upload-model")
+async def upload_model(
+    model: UploadFile,
+    filename: str = Form(...)    
+    ):
+    # Saving the received model to the web server
+    async with aiofiles.open("api/" + filename + ".h5", "wb") as out_file:
+        # Reading the received files as bytes
+        model_file = await model.read()
 
-### DATA MODELS FOR REQUEST BODIES ###
+        # Writing the bytes to the web server
+        await out_file.write(model_file)
+    
+    # Loading the model from the saved file
+    model = tf.keras.models.load_model(
+        filepath="api/" + filename +".h5", 
+        custom_objects={"ReverseSigmoidLayer": util_functions.ReverseSigmoidLayer})
 
-# Data model for cloning feature repositories from GitHub
-class GitRepo(BaseModel):
-    repo_url: str
-    to_path: str
+    # Compiling the model
+    model.compile(
+        optimizer="adam",
+        loss="categorical_crossentropy",
+        metrics=["accuracy"]
+    )
 
-
-# Data model for creating entity DataFrames
-class EntityDF(BaseModel):
-    entity_keys: list[int]
-    entity_name: str
-    timestamps: list[str]
-    frequency: str
-
-
-# Data model for saving datasets
-class SaveDatasetInfo(BaseModel):
-    dataset_name: str
-    feature_view_names: list[str]
-
-
-### API ENDPOINTS ###
-
-# Endpoint for cloning the GitHub repo with a feature repository
-@app.post("/clone_repo")
-def clone_repo(repo_params: GitRepo):
-    # Cloning the repo to a target path if it doesn't exist already
-    if not os.path.exists(path="api/git_repos/" + repo_params.to_path):
-        Repo.clone_from(
-            url=repo_params.repo_url, to_path="api/git_repos/" + repo_params.to_path
+    # Wrapping our model in KerasClassifier
+    app.classifiers[filename] = TensorFlowV2Classifier(
+        model=model,
+        nb_classes=10,
+        input_shape=(28, 28, 1),
+        loss_object=util_functions.loss,
+        train_step=util_functions.train_step
         )
 
-    # Saving the target path for later use
-    app.target_path = repo_params.to_path
+# Endpoint for testing performance against the Fast Gradient Method
+@app.post("/run-fgm")
+def test_fgm(fgm_args: FGMArgs):
+    # Initializing the attack
+    attack = FastGradientMethod(
+        estimator=app.classifiers["vuln_model"], 
+        eps=fgm_args.eps,
+        eps_step=fgm_args.eps_step,
+        batch_size=fgm_args.batch_size
+        )
 
+    # Generating adversarial samples
+    adversarial_images = attack.generate(x=test_images)
 
-# Endpoint for getting the cloned feature store
-@app.post("/get_store")
-def get_store(path: str):
-    # Getting the feature store
-    app.store = FeatureStore(
-        repo_path=os.path.join(os.getcwd(), "api", "git_repos", app.target_path, path)
+    # Evaluating performance on clean and adversarial samples
+    score_clean = app.classifiers["tested_model"]._model.evaluate(x=test_images, y=test_labels)
+    score_adv = app.classifiers["tested_model"]._model.evaluate(x=adversarial_images, y=test_labels)
+
+    # Returning results
+    return {
+        "clean_loss": round(score_clean[0], 3), 
+        "clean_acc": round(score_clean[1], 3), 
+        "score_adv_loss": round(score_adv[0], 3), 
+        "score_adv_acc": round(score_adv[1], 3)
+        }
+
+# Endpoint for testing performance against PoisoningBackdoorAttack
+@app.post("/run-backdoor")
+def test_backdoor(backdoor_args: BackdoorArgs):
+    # Breaking the single string with labels into an array of string labels
+    str_target_labels = backdoor_args.target_labels.split(",")
+
+    # Iterating over the string labels,
+    # converting them to integers,
+    # and 
+    num_target_labels = []
+    for string_label in str_target_labels:
+        num_target_labels.append(int(string_label))
+
+    # Poisoning dataset
+    pimages, plabels, original_labels = util_functions.poison_dataset(
+        test_images, 
+        test_labels,
+        num_target_labels,
+        backdoor_args.percent_poison
+        )
+
+    # Evaluating the model's performance on poisoned images with respect to poisoned labels
+    poisoned_score = app.classifiers["tested_model"]._model.evaluate(pimages, plabels)
+
+    # Evaluating the model's performance on poisoned images with respect to clean labels
+    clean_score = app.classifiers["tested_model"]._model.evaluate(pimages, original_labels)
+
+    # Returning results
+    return {
+        "pscore_loss": round(poisoned_score[0], 3), 
+        "pscore_acc": round(poisoned_score[1], 3), 
+        "clean_loss": round(clean_score[0], 3),
+        "clean_acc": round(clean_score[1], 3)
+         }
+    
+# Endpoint for testing performance against theft by CopycatCNN
+@app.post("/run-copycatcnn")
+def test_copycat_cnn(copycatcnn_args: CopycatCNNArgs):    
+    # Initializing the attack
+    attack = CopycatCNN(
+        app.classifiers["tested_model"],
+        copycatcnn_args.batch_size_fit,
+        copycatcnn_args.batch_size_query,
+        copycatcnn_args.nb_epochs,
+        copycatcnn_args.nb_stolen,
+        use_probability=True        
     )
 
-    # Saving the repo path for later use
-    app.repo_path = path
+    # Initializing the base model for CopycatCNN to train
+    model_stolen = TensorFlowV2Classifier(model=util_functions.create_model(),
+        nb_classes=10,
+        input_shape=(28, 28, 1),
+        loss_object=util_functions.loss,
+        train_step=util_functions.train_step
+        )
 
-    # Changing the working directory to the path of the feature store
-    os.chdir(f"api/git_repos/{app.target_path}/{path}")
-
-    # Updating feature store definitions
-    # to update paths to data sources
-    os.system("feast teardown")
-    os.system("feast apply")
-
-    # Going back to the original directory
-    os.chdir("../../../..")
-
-
-# Endpoint for getting feature views
-@app.get("/get_feature_views")
-def get_feature_views():
-    # Getting feature views
-    feature_views = app.store.list_feature_views()
-
-    # Initializing a list for feature view names
-    feature_view_names = []
-
-    # Iterating over the feature views
-    for feature_view in feature_views:
-        # Adding each feature view name
-        # to the list we created earlier
-        feature_view_names.append(feature_view.name)
-
-    # Returning the feature view names
-    return {"feature_view_names": feature_view_names}
-
-
-# Endpoint for getting feature names
-@app.get("/get_feature_names")
-def get_feature_names(feature_view_name: str):
-    # Initializing a list for feature names
-    feature_names = []
-
-    # Iterating over the features under the given feature view
-    # and appending their names to our list
-    for feature in app.store.get_feature_view(name=feature_view_name).features:
-        feature_names.append(feature.name)
-
-    # Returning the features
-    return {"feature_names": feature_names}
-
-
-# Endpoint for getting entities
-@app.get("/get_entities")
-def get_entities():
-    # Fetching entities
-    entities = app.store.list_entities()
-
-    # Initializing lists for entity names and descriptions
-    entity_names = []
-    entity_descriptions = []
-
-    # Iterating over entities
-    for entity in entities:
-        # Appending entity names and descriptions
-        # to the lists created earlier
-        entity_names.append(entity.name)
-        entity_descriptions.append(entity.description)
-
-    # Returning entity names and their descriptions
-    return {"entity_names": entity_names, "entity_descriptions": entity_descriptions}
-
-
-# Endpoint for registering entity DataFrames
-@app.post("/register_entity_df")
-def register_entity_df(entity_df_params: EntityDF):
-    # Generating timestamps based on provided params
-    # and converting them to a DataFrame
-    timestamps = pd.date_range(
-        start=entity_df_params.timestamps[0],
-        end=entity_df_params.timestamps[1],
-        freq=entity_df_params.frequency,
-    ).to_frame(index=False, name="event_timestamp")
-
-    # Creating a DataFrame with entity keys
-    entity_ids = pd.DataFrame(
-        data=entity_df_params.entity_keys, columns=[entity_df_params.entity_name]
+    # Extracting the victim classifier
+    classifier_stolen = attack.extract(
+        x=train_images[50000:],
+        y=train_labels[50000:],
+        thieved_classifier=model_stolen
     )
 
-    # Merging the timestamps and entity key DataFrame
-    entity_df = timestamps.merge(right=entity_ids, how="cross")
+    # Evaluating the performance of the original model and the stolen model
+    score_victim = app.classifiers["tested_model"]._model.evaluate(x=test_images, y=test_labels)
+    score_stolen = classifier_stolen._model.evaluate(x=test_images, y=test_labels)
 
-    # Saving the entity DataFrame to the app
-    app.entity_df = entity_df
+    # Returning results
+    return {
+        "victim_loss": round(score_victim[0], 3), 
+        "victim_acc": round(score_victim[1], 3), 
+        "copycat_loss": round(score_stolen[0], 3), 
+        "copycat_acc": round(score_stolen[1], 3)
+        }
 
-
-# ADD HTTPTOOLS, WEBSOCKETS
-
-# Endpoint for saving datasets
-@app.post("/save_dataset")
-def save_dataset(dataset_info: SaveDatasetInfo):
-    # Initializing a list for feature names to retrieve
-    features_to_get = []
-
-    # Iterating over requested feature view names
-    # and generating feature names in
-    # the feature_view_name:feature_name format
-    for feature_view in dataset_info.feature_view_names:
-        for feature in app.store.get_feature_view(name=feature_view).features:
-            features_to_get.append(feature_view + ":" + feature.name)
-
-    # Retrieving requested features from the feature store
-    job = app.store.get_historical_features(
-        entity_df=app.entity_df, features=features_to_get
-    )
-
-    storage_path = os.path.join(
-        os.getcwd(),
-        "api",
-        "git_repos",
-        app.target_path,
-        app.repo_path,
-        "data",
-        f"{dataset_info.dataset_name}.parquet",
-    )
-
-    # Storing the dataset locally on the server
-    app.store.create_saved_dataset(
-        from_=job,
-        name=dataset_info.dataset_name,
-        storage=SavedDatasetFileStorage(storage_path),
-    )
-
-
-# Endpoint for materialization
-@app.post("/materialize")
-def materialize(start_date: str, end_date: str):
-    # Converting string dates to datetimes
-    end_date = datetime.strptime(end_date, "%Y-%m-%d")
-
-    start_date = datetime.strptime(start_date, "%Y-%m-%d")
-
-    # Materializing features between given dates
-    app.store.materialize(end_date=end_date, start_date=start_date)
-
-
-# Endpoint for incremental materializatioon
-@app.post("/materialize_incremental")
-def materialize_incremental(end_date: str):
-    # Converting string date to datetime
-    end_date = datetime.strptime(end_date, "%Y-%m-%d")
-
-    # Incrementally materializing features up to end date
-    app.store.materialize_incremental(end_date=end_date)
-
+@app.post("/test_miface")
+def test_miface():
+    pass
 
 # Launching the API
 if __name__ == "__main__":
-    uvicorn.run(app="api:app", port=5000, reload=False)
+    uvicorn.run(
+        app="api:app", 
+        port=5000, 
+        reload=True
+        )

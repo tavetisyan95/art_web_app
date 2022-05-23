@@ -6,18 +6,18 @@ function CopycatCNNUI(props) {
 		<div className="UI_wrapper">			
 
             <div className="ui_item">
-					<fieldset className="fieldset">
-						<legend className="legend">Model</legend>
-						<div className="input">
-							<input type="file" id="tested_model_copycatcnn" accept=".h5"></input>
-						</div>
-						<button id="select_model_copycatcnn_button" onClick={(e) => {document.getElementById("tested_model_copycatcnn").click()}}>UPLOAD</button>
-						<div className="description">
-							<br></br>
-							<p>The model that you want to test.</p>							
-						</div>
-					</fieldset>
-				</div>
+				<fieldset className="fieldset">
+					<legend className="legend">Model</legend>
+					<div className="input">
+						<input type="file" id="tested_model_copycatcnn" accept=".h5"></input>
+					</div>
+					<button id="select_model_copycatcnn_button" onClick={(e) => {document.getElementById("tested_model_copycatcnn").click()}}>UPLOAD</button>
+					<div className="description">
+						<br></br>
+						<p>The model that you want to test.</p>							
+					</div>
+				</fieldset>
+			</div>
             
             <div className="ui_item">
                 <fieldset className="fieldset">
@@ -31,7 +31,6 @@ function CopycatCNNUI(props) {
                     <br></br>
                 </fieldset>
 			</div>
-
 
 			<div className="ui_item">
 				<fieldset className="fieldset">

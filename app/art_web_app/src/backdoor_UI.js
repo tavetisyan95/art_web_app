@@ -3,21 +3,20 @@ import {events} from "./events.js";
 
 function BackdoorUI(props) { 
 	return (
-		<div className="UI_wrapper">			
-
+		<div className="UI_wrapper">	
             <div className="ui_item">
-					<fieldset className="fieldset">
-						<legend className="legend">Model</legend>
-						<div className="input">
-							<input type="file" id="tested_model_poison" accept=".h5"></input>
-						</div>
-						<button id="select_model_poison_button" onClick={(e) => {document.getElementById("tested_model_poison").click()}}>UPLOAD</button>
-						<div className="description">
-							<br></br>
-							<p>The model that you want to test.</p>							
-						</div>
-					</fieldset>
-				</div>
+				<fieldset className="fieldset">
+					<legend className="legend">Model</legend>
+					<div className="input">
+						<input type="file" id="tested_model_poison" accept=".h5"></input>
+					</div>
+					<button id="select_model_poison_button" onClick={(e) => {document.getElementById("tested_model_poison").click()}}>UPLOAD</button>
+					<div className="description">
+						<br></br>
+						<p>The model that you want to test.</p>							
+					</div>
+				</fieldset>
+			</div>
             
             <div className="ui_item">
                 <fieldset className="fieldset">
@@ -32,12 +31,11 @@ function BackdoorUI(props) {
                 </fieldset>
 			</div>  	
 
-
 			<div className="ui_item">
 				<fieldset className="fieldset">
 					<legend className="legend">Poisoning percentage</legend>										
 					<div className="description">
-						<p className="type">Float, default: 50</p>						
+						<p className="type">Float in range (0, 1], default: 0.50</p>						
 					</div>
 					<div className="input">
 						<input id="percent_poison" type="text" defaultValue="0.50"></input>

@@ -107,7 +107,9 @@ input {
 }
 
 .description {
-	margin-top: 20px;
+	margin-top: 1.5%;
+	margin-left: 10%;
+	margin-right: 10%;
 }
 
 #tested_model_fgm, 

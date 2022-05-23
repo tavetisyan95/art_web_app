@@ -1,2 +1,3 @@
-git_repos/
 __pycache__/
+tested_model.h5
+vuln_model.h5

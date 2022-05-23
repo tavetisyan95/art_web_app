@@ -10,8 +10,9 @@ function App() {
 			<p className="title">AI DEFENSE TESTER</p>
 			<p className="subtitle">Run attacks on your ML model to determine if it is resistant to attacks.</p>										
 			
-			<p>You can obtain the weights of a TF model by calling the method <i>save</i> of a trained <i>Model</i> or <i>Sequential</i> model.</p>
-			<p>Files in <i>.h5</i> format are expected.</p>
+			<p>The app expects TF Keras models.</p>
+			<p>You can obtain the weights of a TF Keras model by calling its method <i>save</i>. Files in <i>.h5</i> format are expected.</p>
+			<p>Note that models for all attacks are stored in the same variable in the API. When changing attacks, make sure to reupload the model you want to test.</p>
 
 			<br></br>
 			<br></br>
@@ -27,16 +28,17 @@ function App() {
 			<br></br>
 			<p className="subtitle">2. POISONING BACKDOOR ATTACK</p>
 			<p className="description">Select the params for a poisoning backdoor attack.</p>
+			<p className="description">After the poisoned dataset is generated, your model will be evaluated against it with respect to both poisoned labels and clean labels. That is, the API will evaluate the same poisoned images against their respective poisoned and clean labels.</p>
 			<p className="description">Depending on the results, you can identify if your model is poisoned or not. Possible outcomes are as follows:</p>
 			<br></br>
 			<p className="description">1. METRICS WITH RESPECT TO POISONED LABELS ARE WORSE THAN WITH RESPECT TO CLEAN LABELS.</p> 
-			<p className="description">This probably means that your model doesn't have backdoors. The model performs well against clean labels because it can correctly identify samples, while the performance against poisoned labels is bad because the backdoor in the samples doesn't trigger the attacker's desired output.</p>
+			<p className="description">This probably means that your model doesn't have backdoors. The model performs well against clean labels because it can correctly identify the samples, while the performance against poisoned labels is bad because the backdoor in the samples doesn't trigger the attacker's desired output.</p>
 			<br></br>
 			<p className="description">2. METRICS WITH RESPECT TO CLEAN LABELS ARE WORSE THAN WITH RESPECT TO POISONED LABELS.</p>
-			<p className="description">This probably means that your model has a backdoor and that the target labels reflect the actual poisoned labels the model has been trained on. If the model performs well with respect to poisoned labels, it means that the backdoor in the samples triggers the attacker's desired output.</p>
+			<p className="description">This probably means that your model has a backdoor and that <i>your target labels reflect the actual poisoned labels</i> the model has been trained on. If the model performs well with respect to poisoned labels, it means that the backdoor in the samples triggers the attacker's desired output.</p>
 			<br></br>
 			<p className="description">3. METRICS WITH RESPECT TO BOTH CLEAN AND POISONED LABELS ARE POOR.</p> 
-			<p className="description">This probably means that your model has a backdoor, but your chosen target labels aren't the actual poisoned labels the model has been trained on. The model performs badly against clean labels because it has a backdoor, but the performance against poisoned labels is also bad because you've picked incorrect target labels.</p>
+			<p className="description">This probably means that your model has a backdoor, but <i>your chosen target labels aren't the actual poisoned labels</i> the model has been trained on. The model performs badly against clean labels because it has a backdoor, but the performance against poisoned labels is also bad because you've picked incorrect target labels.</p>
 			<BackdoorUI/>	
 
 			<br></br>
