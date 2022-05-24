@@ -60,7 +60,7 @@ To run an FGM attack, you will need to upload two models:
 - **Tested model** - this is the model that you want to test against the attack. This could be a robust model trained with the Adversarial Trainer.
 - **Vulnerable model** - this is the model that FGM will learn to generate adversarial samples for. This model should be similar to your tested model.
 
-Use `models/robust_model.h5` as `Tested model` and `models/vulnerable_model.h5` as `Vulnerable model`. To upload the models, click on the `UPLOAD` buttons on the left-hand side of the window and select the desired model files. After that, click `Upload Model` and `Upload Vulnerable Model` to upload the models to the web server.
+Use `models/robust_model_fgm.h5` as `Tested model` and `models/vulnerable_model_fgm.h5` as `Vulnerable model`. To upload the models, click on the `UPLOAD` buttons on the left-hand side of the window and select the desired model files. After that, click `Upload Model` and `Upload Vulnerable Model` to upload the models to the web server.
 
 You can adjust three parameters for FGM - `eps`, `eps_step`, and `batch_size`. The default values in the app work for the supplied test models, but you could try different values to see how the attack's results change. The batch size probably will not affect the attack's effectiveness.
 
@@ -113,7 +113,7 @@ The third and final attack type you can try is CopycatCNN.
 
 ![Image](screenshots/copycatcnn_screen.jpg)
 
-You again start by uploading the model. The model `models/protected_model.h5` has the same architecture as the other test models, but it has a custom Reverse Sigmoid layer as its output. This model will be resistant to extraction attacks, while the others probably won't be.
+You again start by uploading the model. The model `models/postprocessed_model.h5` has the same architecture as the other test models, but it has a custom Reverse Sigmoid layer as its output. This model will be resistant to extraction attacks, while the others probably won't be.
 
 You can adjust the following parameters for this attack:
 
