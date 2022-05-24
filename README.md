@@ -46,7 +46,7 @@ Our app implements the following attacks:
 
 The app is designed for models trained on the MNIST digits dataset - the training/testing data is hardcoded in the API. TF/Keras models are expected. The app should work with various model architectures, but we haven't tested model support. You may run into issues with model architectures that are different from that in our sample models.
 
-We provide pretrained test models in the directory `models`. However, if you want to train your own models, use the code in [this repository]. The code you'll find there is the exact same code we used to train our test models.
+We provide pretrained test models in the directory `models`. However, if you want to train your own models, use the Jupyter notebooks in the directory `models`. The code you'll find there is the exact same code we used to train our test models. `reverse_sigmoid_model.ipynb` contains the code for the model with the custom Reverse Sigmoid output, while `poisoning_fgm_models.ipynb` contains the code for a poisoned model and model that is resistant to the Fast Gradient Method attack.
 
 
 ### 1. Running a Fast Gradient Method attack against your model
