@@ -95,7 +95,7 @@ function CopycatCNNUI(props) {
 			<div className="ui_item">
 				<fieldset className="fieldset">					
 					<br></br>
-					<button id="attack_copycatcnn_button" onClick={() => {events.runCopycatCNN()}}>Run a CopycatCNN attack</button> 
+					<button id="attack_copycatcnn_button" onClick={() => {events.runCopycatCNN()}}>Run a CopycatCNN Attack</button> 
 					<br></br>
 					<br></br>
 					<div className="text" id="copycatcnn_response_area">

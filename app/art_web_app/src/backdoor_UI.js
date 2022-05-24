@@ -66,7 +66,7 @@ function BackdoorUI(props) {
 			<div className="ui_item">
 				<fieldset className="fieldset">					
 					<br></br>
-					<button id="attack_backdoor_button" onClick={() => {events.runBackdoor()}}>Run a backdoor attack</button> 
+					<button id="attack_backdoor_button" onClick={() => {events.runBackdoor()}}>Run a Backdoor Attack</button> 
 					<br></br>
 					<br></br>
 					<div className="text" id="backdoor_response_area">

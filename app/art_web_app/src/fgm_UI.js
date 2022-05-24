@@ -107,7 +107,7 @@ function FGMUI(props) {
 			<div className="ui_item">
 				<fieldset className="fieldset">					
 					<br></br>
-					<button id="attack_fgm_button" onClick={() => {events.runFGM()}}>Run an FGM attack</button> 
+					<button id="attack_fgm_button" onClick={() => {events.runFGM()}}>Run an FGM Attack</button> 
 					<br></br>
 					<br></br>
 					<div className="text" id="fgm_response_area">
