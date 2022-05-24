@@ -71,7 +71,8 @@ async def upload_model(
     # Loading the model from the saved file
     model = tf.keras.models.load_model(
         filepath="api/" + filename +".h5", 
-        custom_objects={"ReverseSigmoidLayer": util_functions.ReverseSigmoidLayer})
+        custom_objects={"ReverseSigmoidLayer": util_functions.ReverseSigmoidLayer}
+        )
 
     # Compiling the model
     model.compile(
@@ -123,7 +124,7 @@ def test_backdoor(backdoor_args: BackdoorArgs):
 
     # Iterating over the string labels,
     # converting them to integers,
-    # and 
+    # and appending them to our target list
     num_target_labels = []
     for string_label in str_target_labels:
         num_target_labels.append(int(string_label))
@@ -164,7 +165,8 @@ def test_copycat_cnn(copycatcnn_args: CopycatCNNArgs):
     )
 
     # Initializing the base model for CopycatCNN to train
-    model_stolen = TensorFlowV2Classifier(model=util_functions.create_model(),
+    model_stolen = TensorFlowV2Classifier(
+        model=util_functions.create_model(),
         nb_classes=10,
         input_shape=(28, 28, 1),
         loss_object=util_functions.loss,
