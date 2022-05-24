@@ -64,7 +64,7 @@ Use `models/robust_model_fgm.h5` as `Tested model` and `models/vulnerable_model_
 
 You can adjust three parameters for FGM - `eps`, `eps_step`, and `batch_size`. The default values in the app work for the supplied test models, but you could try different values to see how the attack's results change. The batch size probably will not affect the attack's effectiveness.
 
-After everything is ready, press `Run an FGM attack`. You should see the progress of the attack in the terminal window from which you launched the app. Once the attack is complete, the app will return two sets of scores:
+After everything is ready, press `Run an FGM Attack`. You should see the progress of the attack in the terminal window from which you launched the app. Once the attack is complete, the app will return two sets of scores:
 
 - **Metrics on clean data** - these show the performance of the tested model on clean samples.
 - **Metrics on adversarial data** - these show the performance of the tested model on FGM samples.
@@ -91,7 +91,7 @@ After you upload the model, you can adjust `Poisoning percentage` and `Target la
 - `Poisoning percentage` determines the fraction of the original clean samples to poison in the range `(0, 1]`. The poisoned samples are added to the original clean ones, so you essentially get a dataset that was augmented with poisoned samples.
 - `Target labels` by default defines the same fake labels that were used to poison `poisoned_model.h5`. You can try other target values as well, which might affect the attack results.
 
-After you are done with the parameters, click `Run a backdoor attack`. After the attack is complete, you will again see two sets of metrics:
+After you are done with the parameters, click `Run a backdoor Attack`. After the attack is complete, you will again see two sets of metrics:
 
 - **Metrics with respect to poisoned labels** - these show the performance of the tested model on *poisoned samples* against their respective *poisoned labels*.
 - **Test loss and accuracy on adversarial data** - these show the performance of the tested model on *poisoned samples* against their respective *clean labels*.
@@ -121,7 +121,7 @@ You can adjust the following parameters for this attack:
 - **Epochs**. This is the number of epochs that CopycatCNN trains the stolen model for.
 - **Number of queries**. This parameter corresponds to `nb_stolen` of ART's `CopycatCNN` class. It effectively determines the size of the training set for the stolen classifier.
 
-After you are done, just click `Run a CopycatCNN attack`. You will once again see two sets of performance metrics:
+After you are done, just click `Run a CopycatCNN Attack`. You will once again see two sets of performance metrics:
 
 ` **Metrics of the victim model**. These are the performance metrics of the victim model that CopycatCNN tried to steal against the clean test set.
 ` **Metrics of the stolen model**. These are the performance metrics of the stolen model against the clean test set.
