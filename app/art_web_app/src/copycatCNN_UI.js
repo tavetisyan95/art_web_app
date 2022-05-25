@@ -81,10 +81,10 @@ function CopycatCNNUI(props) {
 				<fieldset className="fieldset">
 					<legend className="legend">Number of queries (nb_stolen)</legend>										
 					<div className="description">
-						<p className="type">Integer, default: 10000</p>						
+						<p className="type">Integer, default: 1000</p>						
 					</div>
 					<div className="input">
-						<input id="nb_stolen" type="text" defaultValue="10000"></input>
+						<input id="nb_stolen" type="text" defaultValue="1000"></input>
 					</div>
 					<div className="description">
 					<p>Number of queries to submit to the victim classifier to fit the stolen classifier. Effectively determines the size of the training set for the stolen classifier.</p>												
