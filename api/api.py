@@ -12,28 +12,28 @@ from art.estimators.classification import TensorFlowV2Classifier
 import uvicorn
 import util_functions
 
+# Data model for Fast Gradient Method attacks
+class FGMArgs(BaseModel):    
+    eps: float
+    eps_step: float
+    batch_size: int
+
 # Data model for backdoor attacks
 class BackdoorArgs(BaseModel):
     percent_poison: float
     target_labels: str
 
-# Data model for copycat CNN
+# Data model for copycat CNN attacks
 class CopycatCNNArgs(BaseModel):
     batch_size_fit: int
     batch_size_query: int
     nb_epochs: int
     nb_stolen: int
 
-# Data model for the Fast Gradient Method
-class FGMArgs(BaseModel):    
-    eps: float
-    eps_step: float
-    batch_size: int
-
 # Loading data
 (train_images, train_labels), (test_images, test_labels), min, max = art.utils.load_dataset(name="mnist")
 
-# Initializing app
+# Initializing the API
 app = FastAPI()
 
 # Defining allowed origins
@@ -44,9 +44,6 @@ origins = [
     "http://127.0.0.1:5000"
 ]
 
-# Creating dictionary to store uploaded models
-app.classifiers = {}
-
 # Defining CORS policy
 app.add_middleware(
     middleware_class=CORSMiddleware,
@@ -54,7 +51,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"])
 
-# Endpoint for uploading the model to test
+# Creating dictionary to store uploaded models
+app.classifiers = {}
+
+# Endpoint for uploading the model for testing
 @app.post("/upload-model")
 async def upload_model(
     model: UploadFile,
@@ -62,7 +62,7 @@ async def upload_model(
     ):
     # Saving the received model to the web server
     async with aiofiles.open("api/" + filename + ".h5", "wb") as out_file:
-        # Reading the received files as bytes
+        # Reading the received model file as bytes
         model_file = await model.read()
 
         # Writing the bytes to the web server
@@ -81,7 +81,7 @@ async def upload_model(
         metrics=["accuracy"]
     )
 
-    # Wrapping our model in KerasClassifier
+    # Wrapping our model in TensorFlowV2Classifier
     app.classifiers[filename] = TensorFlowV2Classifier(
         model=model,
         nb_classes=10,
@@ -90,7 +90,7 @@ async def upload_model(
         train_step=util_functions.train_step
         )
 
-# Endpoint for testing performance against the Fast Gradient Method
+# Endpoint for testing model performance against the Fast Gradient Method
 @app.post("/run-fgm")
 def test_fgm(fgm_args: FGMArgs):
     # Initializing the attack
@@ -129,8 +129,8 @@ def test_backdoor(backdoor_args: BackdoorArgs):
     for string_label in str_target_labels:
         num_target_labels.append(int(string_label))
 
-    # Poisoning dataset
-    pimages, plabels, original_labels = util_functions.poison_dataset(
+    # Poisoning the dataset
+    poisoned_images, poisoned_labels, clean_labels = util_functions.poison_dataset(
         test_images, 
         test_labels,
         num_target_labels,
@@ -138,10 +138,10 @@ def test_backdoor(backdoor_args: BackdoorArgs):
         )
 
     # Evaluating the model's performance on poisoned images with respect to poisoned labels
-    poisoned_score = app.classifiers["tested_model"]._model.evaluate(pimages, plabels)
+    poisoned_score = app.classifiers["tested_model"]._model.evaluate(x=poisoned_images, y=poisoned_labels)
 
     # Evaluating the model's performance on poisoned images with respect to clean labels
-    clean_score = app.classifiers["tested_model"]._model.evaluate(pimages, original_labels)
+    clean_score = app.classifiers["tested_model"]._model.evaluate(x=poisoned_images, y=clean_labels)
 
     # Returning results
     return {
@@ -191,10 +191,6 @@ def test_copycat_cnn(copycatcnn_args: CopycatCNNArgs):
         "copycat_loss": round(score_stolen[0], 3), 
         "copycat_acc": round(score_stolen[1], 3)
         }
-
-@app.post("/test_miface")
-def test_miface():
-    pass
 
 # Launching the API
 if __name__ == "__main__":
