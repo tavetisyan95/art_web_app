@@ -4,4 +4,4 @@ aiofiles
 fastapi
 uvicorn
 pydantic
-pandas
+numpy
