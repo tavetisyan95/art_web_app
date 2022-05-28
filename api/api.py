@@ -92,7 +92,7 @@ async def upload_model(
 
 # Endpoint for testing model performance against the Fast Gradient Method
 @app.post("/run-fgm")
-def test_fgm(fgm_args: FGMArgs):
+def run_fgm(fgm_args: FGMArgs):
     # Initializing the attack
     attack = FastGradientMethod(
         estimator=app.classifiers["vuln_model"], 
@@ -118,7 +118,7 @@ def test_fgm(fgm_args: FGMArgs):
 
 # Endpoint for testing performance against PoisoningBackdoorAttack
 @app.post("/run-backdoor")
-def test_backdoor(backdoor_args: BackdoorArgs):
+def run_backdoor(backdoor_args: BackdoorArgs):
     # Breaking the single string with labels into an array of string labels
     str_target_labels = backdoor_args.target_labels.split(",")
 
@@ -153,7 +153,7 @@ def test_backdoor(backdoor_args: BackdoorArgs):
     
 # Endpoint for testing performance against theft by CopycatCNN
 @app.post("/run-copycatcnn")
-def test_copycat_cnn(copycatcnn_args: CopycatCNNArgs):    
+def run_copycatcnn(copycatcnn_args: CopycatCNNArgs):    
     # Initializing the attack
     attack = CopycatCNN(
         app.classifiers["tested_model"],
