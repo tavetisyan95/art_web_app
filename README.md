@@ -1,4 +1,4 @@
-This repository contains the project for the post [ML Security with the Adversarial Robustness Toolbox: Part 3 – Building an AI Defense Tester with ART] on the Kedion blog on Medium.
+This repository contains the project for the post [ML Security with the Adversarial Robustness Toolbox: Part 3 – Building an AI Defense Tester with ART](https://kedion.medium.com/ml-security-with-the-adversarial-robustness-toolbox-46bdc4fb97a3) on the Kedion blog on Medium.
 
 ## Clone Project
 
